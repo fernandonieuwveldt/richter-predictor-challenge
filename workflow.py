@@ -33,22 +33,9 @@ X_train, X_test, y_train, y_test = train_test_split(train_data_features, raw_lab
 test_data_features_copy = test_data_features.copy()
 test_data_features = test_data_features.drop('building_id', axis=1)
 
-def normalize(data_frame=None):
-    return numpy.mean(data_frame[NUMERICAL_FEATURES]),\
-           numpy.std(data_frame[NUMERICAL_FEATURES])
 
 (X_train_no_damage, y_train_no_damage), (X_train_has_damage, y_train_has_damage) = DataSplitter().split(X_train, y_train)
 (X_test_no_damage, y_test_no_damage), (X_test_has_damage, y_test_has_damage) = DataSplitter().split(X_test, y_test)
-
-# no damage
-# no_damage_mean, no_damage_std = normalize(X_train_no_damage)
-# X_train_no_damage[NUMERICAL_FEATURES] = (X_train_no_damage[NUMERICAL_FEATURES] - no_damage_mean) / no_damage_std
-# X_test_no_damage[NUMERICAL_FEATURES]  = (X_test_no_damage[NUMERICAL_FEATURES] - no_damage_mean) / no_damage_std
-
-# has damage
-# has_damage_mean, has_damage_std = normalize(X_train_has_damage)
-# X_train_has_damage[NUMERICAL_FEATURES] = (X_train_has_damage[NUMERICAL_FEATURES] - has_damage_mean) / has_damage_std
-# X_test_has_damage[NUMERICAL_FEATURES]  = (X_test_has_damage[NUMERICAL_FEATURES] - has_damage_mean) / has_damage_std
 
 # No damage dataset
 train_dataset_no_damage = TFDataTransformer().transform(X_train_no_damage, y_train_no_damage).batch(BATCH_SIZE)
@@ -136,14 +123,12 @@ def optimal_threshold_precision_recall(target, confidence):
 CALIBRATION_THRESHOLD =  0.5  # optimal_threshold_precision_recall(y_test_no_damage.values, validation_probas)
 
 # Apply models
-# test_data_features[NUMERICAL_FEATURES] = (test_data_features_copy[NUMERICAL_FEATURES] - no_damage_mean) / no_damage_std 
 test_dataset = tf.data.Dataset.from_tensor_slices(dict(test_data_features)).batch(BATCH_SIZE)
 pred_no_damage_probas = model_no_damage.predict(test_dataset)
 pred_no_damage = 1.0 * (pred_no_damage_probas >= CALIBRATION_THRESHOLD)
 
 
 test_data_features_has_damage = test_data_features.loc[pred_no_damage==0, :]
-# test_data_features_has_damage[NUMERICAL_FEATURES] = (test_data_features_has_damage[NUMERICAL_FEATURES] - has_damage_mean) / has_damage_std
 test_dataset_has_damage = tf.data.Dataset.from_tensor_slices(dict(test_data_features_has_damage)).batch(BATCH_SIZE)
 pred_has_damage = model_has_damage.predict(test_dataset_has_damage).argmax(axis=1)+2
 
